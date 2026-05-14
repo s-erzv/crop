@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import axios from 'axios'
 import { Loader2, Sprout, Droplets, Thermometer, Wind, FlaskConical, CloudRain, Leaf } from 'lucide-react'
 import { useRecommendation, FormValues } from '../components/RecommendationContext'
@@ -27,8 +27,19 @@ const FIELD_CONFIG: {
 export default function HomePage() {
   const { formValues, setFormValues, setResult } = useRecommendation()
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const navigate = useNavigate()
+  const [error, setError]     = useState<string | null>(null)
+  const [toast, setToast]     = useState<string | null>(null)
+  const navigate  = useNavigate()
+  const location  = useLocation()
+
+  // Fix 5: Show toast message forwarded from ResultPage redirect
+  useEffect(() => {
+    const msg = (location.state as { toast?: string } | null)?.toast
+    if (msg) {
+      setToast(msg)
+      setTimeout(() => setToast(null), 4000)
+    }
+  }, [location.state])
 
   const handleChange = (key: keyof FormValues, value: number) => {
     setFormValues({ ...formValues, [key]: value })
@@ -54,6 +65,14 @@ export default function HomePage() {
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-12">
+      {/* Fix 5: Toast notification */}
+      {toast && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-forest-800 text-white
+                        text-sm font-body px-5 py-3 rounded-xl shadow-xl border border-forest-600
+                        animate-fade-up whitespace-nowrap">
+          {toast}
+        </div>
+      )}
       {/* Hero Header */}
       <div className="mb-12 animate-fade-up">
         <div className="flex items-center gap-2 mb-4">

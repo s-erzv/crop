@@ -1,17 +1,42 @@
 """
-FastAPI backend for Crop Recommendation DSS (v2).
+FastAPI backend for Crop Recommendation DSS (v3).
 Run: uvicorn main:app --reload  (from backend/ directory)
 """
 
-import json
+import asyncio
+import json as _json
+import logging
 import os
 import sqlite3
+from concurrent.futures import ThreadPoolExecutor
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from model.predict import predict, load_artifacts, load_ood_artifacts
+
+# ── Structured JSON logger ───────────────────────────────────────────────────
+
+class _JSONFormatter(logging.Formatter):
+    def format(self, record: logging.LogRecord) -> str:
+        obj = {
+            "ts":     self.formatTime(record, "%Y-%m-%dT%H:%M:%S"),
+            "level":  record.levelname,
+            "msg":    record.getMessage(),
+            "module": record.module,
+        }
+        if record.exc_info:
+            obj["exc"] = self.formatException(record.exc_info)
+        return _json.dumps(obj)
+
+_handler = logging.StreamHandler()
+_handler.setFormatter(_JSONFormatter())
+logger = logging.getLogger("cropsage")
+logger.addHandler(_handler)
+logger.setLevel(logging.INFO)
+
+_executor = ThreadPoolExecutor(max_workers=4)
 
 BASE_DIR  = os.path.dirname(os.path.abspath(__file__))
 DB_PATH   = os.path.join(BASE_DIR, "crop_dw.db")
@@ -20,7 +45,7 @@ EVAL_PATH = os.path.join(BASE_DIR, "model", "evaluation.json")
 app = FastAPI(
     title="Crop Recommendation DSS",
     description="Prescriptive Analytics DSS — calibrated RF + SHAP + OOD detection",
-    version="2.0.0"
+    version="3.0.0"
 )
 
 app.add_middleware(
@@ -47,9 +72,9 @@ async def startup():
     try:
         load_artifacts()
         load_ood_artifacts()
-        print("All model artifacts loaded successfully.")
+        logger.info("All model artifacts loaded successfully.")
     except Exception as e:
-        print(f"Warning: Could not pre-load artifacts: {e}")
+        logger.warning(f"Could not pre-load artifacts: {e}")
 
 
 @app.get("/health")
@@ -69,23 +94,28 @@ def health():
 
 
 @app.post("/recommend")
-def recommend(req: RecommendRequest):
+async def recommend(req: RecommendRequest):
     """Calibrated crop recommendation with SHAP explanation and OOD check."""
+    logger.info(f"Prediction request: {req.model_dump()}")
+    loop = asyncio.get_event_loop()
     try:
-        result = predict(req.model_dump())
+        result = await loop.run_in_executor(_executor, predict, req.model_dump())
+        logger.info(f"Prediction result: crop={result['recommended_crop']} conf={result['confidence']:.3f} margin={result['margin']:.3f}")
         return result
     except FileNotFoundError as e:
+        logger.error(f"Artifact missing: {e}")
         raise HTTPException(
             status_code=503,
             detail=f"Model artifacts missing. Run: python model/train.py  ({e})"
         )
     except Exception as e:
+        logger.error(f"Prediction error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/history")
-def history(limit: int = 50, offset: int = 0):
-    """User recommendation history (is_training=0 rows only)."""
+def history(limit: int = 50, offset: int = 0, crop: str = ""):
+    """User recommendation history (is_training=0 rows only), with optional crop filter."""
     if not os.path.exists(DB_PATH):
         return {"total": 0, "items": []}
 
@@ -93,10 +123,16 @@ def history(limit: int = 50, offset: int = 0):
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
 
-    cur.execute("SELECT COUNT(*) FROM Fact_CropRecommendation WHERE is_training = 0")
+    crop_filter = " AND dc.label = ?" if crop else ""
+    count_params = (crop,) if crop else ()
+    cur.execute(
+        f"SELECT COUNT(*) FROM Fact_CropRecommendation f JOIN Dim_Crop dc ON f.crop_id = dc.crop_id WHERE f.is_training = 0{crop_filter}",
+        count_params
+    )
     total = cur.fetchone()[0]
 
-    cur.execute("""
+    query_params = (crop, limit, offset) if crop else (limit, offset)
+    cur.execute(f"""
         SELECT
             f.fact_id,
             dt.timestamp,
@@ -113,10 +149,10 @@ def history(limit: int = 50, offset: int = 0):
         JOIN Dim_Climate  dc2 ON f.climate_id = dc2.climate_id
         JOIN Dim_Crop     dc  ON f.crop_id    = dc.crop_id
         JOIN Dim_Time     dt  ON f.time_id    = dt.time_id
-        WHERE f.is_training = 0
+        WHERE f.is_training = 0{crop_filter}
         ORDER BY f.fact_id DESC
         LIMIT ? OFFSET ?
-    """, (limit, offset))
+    """, query_params)
 
     rows = cur.fetchall()
     conn.close()
@@ -298,6 +334,32 @@ def analytics():
             "f1_macro":         model_eval.get("f1_macro"),
         }
     }
+
+
+class FeedbackRequest(BaseModel):
+    fact_id:  int
+    feedback: int  # 1 = helpful, -1 = not helpful
+
+@app.post("/feedback")
+def submit_feedback(req: FeedbackRequest):
+    """Record user feedback (👍/👎) for a prediction."""
+    if req.feedback not in (1, -1):
+        raise HTTPException(status_code=400, detail="feedback must be 1 or -1")
+    if not os.path.exists(DB_PATH):
+        raise HTTPException(status_code=503, detail="Database not found")
+    conn = sqlite3.connect(DB_PATH)
+    cur  = conn.cursor()
+    cur.execute(
+        "UPDATE Fact_CropRecommendation SET user_feedback = ? WHERE fact_id = ? AND is_training = 0",
+        (req.feedback, req.fact_id)
+    )
+    updated = cur.rowcount
+    conn.commit()
+    conn.close()
+    if updated == 0:
+        raise HTTPException(status_code=404, detail=f"Fact ID {req.fact_id} not found")
+    logger.info(f"Feedback recorded: fact_id={req.fact_id} feedback={req.feedback}")
+    return {"status": "ok", "fact_id": req.fact_id, "feedback": req.feedback}
 
 
 @app.get("/feature-importance")

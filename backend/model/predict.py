@@ -41,6 +41,7 @@ _base_model       = None
 _explainer        = None
 _ood_detector     = None
 _feature_stats    = None
+_model_version    = None
 
 
 def load_artifacts():
@@ -64,6 +65,18 @@ def load_ood_artifacts():
     return _ood_detector, _feature_stats
 
 
+def load_model_version() -> str:
+    global _model_version
+    if _model_version is None:
+        eval_path = os.path.join(MODEL_DIR, "evaluation.json")
+        try:
+            with open(eval_path) as fh:
+                _model_version = json.load(fh).get("model_version", "unknown")
+        except Exception:
+            _model_version = "unknown"
+    return _model_version
+
+
 def add_derived_features(input_data: dict) -> dict:
     """Fix 1: Compute derived features from raw user input."""
     d = dict(input_data)
@@ -79,6 +92,14 @@ def check_ood(input_data: dict) -> dict:
 
     out_of_range = []
     detail_parts = []
+
+    # Degenerate input: N+P+K all near zero is agronomically impossible
+    npk_total = input_data["N"] + input_data["P"] + input_data["K"]
+    if npk_total < 1.0:
+        out_of_range.append("N_P_K_combined")
+        detail_parts.append(
+            f"Total N+P+K ({npk_total:.1f}) mendekati nol — input kemungkinan tidak valid"
+        )
 
     for feat in ORIGINAL_FEATURES:
         val   = input_data[feat]
@@ -96,7 +117,7 @@ def check_ood(input_data: dict) -> dict:
     anomaly_score  = float(ood_detector.decision_function(X_orig)[0])
     is_anomaly     = ood_detector.predict(X_orig)[0] == -1
 
-    ood_warning = bool(out_of_range) or is_anomaly
+    ood_warning = bool(out_of_range) or bool(is_anomaly)
 
     if detail_parts:
         ood_details = (
@@ -155,7 +176,8 @@ def build_explanation(crop: str, shap_dict: dict, input_data: dict) -> str:
 
 
 def store_to_dw(conn, input_data_orig: dict, input_data_full: dict,
-                crop: str, confidence: float, shap_dict: dict) -> int:
+                crop: str, confidence: float, shap_dict: dict,
+                model_version: str = "") -> int:
     cur = conn.cursor()
     now = datetime.now()
 
@@ -196,10 +218,11 @@ def store_to_dw(conn, input_data_orig: dict, input_data_full: dict,
         (soil_id, climate_id, crop_id, time_id, confidence_score,
          is_training, true_label,
          shap_n, shap_p, shap_k, shap_temperature, shap_humidity, shap_ph, shap_rainfall,
-         shap_n_p_ratio, shap_n_k_ratio, shap_ph_rainfall)
+         shap_n_p_ratio, shap_n_k_ratio, shap_ph_rainfall,
+         model_version)
         VALUES (?, ?, ?, ?, ?, 0, NULL,
                 ?, ?, ?, ?, ?, ?, ?,
-                ?, ?, ?)
+                ?, ?, ?, ?)
     """, (
         soil_id, climate_id, crop_id, time_id, confidence,
         shap_dict.get("N"),           shap_dict.get("P"),
@@ -208,6 +231,7 @@ def store_to_dw(conn, input_data_orig: dict, input_data_full: dict,
         shap_dict.get("rainfall"),
         shap_dict.get("N_P_ratio"),   shap_dict.get("N_K_ratio"),
         shap_dict.get("pH_rainfall"),
+        model_version,
     ))
     conn.commit()
     return int(cur.lastrowid)
@@ -229,6 +253,11 @@ def predict(input_data: dict) -> dict:
     top_idx = np.argsort(proba)[::-1]
     recommended_crop = classes[top_idx[0]]
     confidence       = float(proba[top_idx[0]])
+
+    # Prediction margin and ambiguity warning
+    top2_conf = float(proba[top_idx[1]]) if len(top_idx) > 1 else 0.0
+    margin    = round(confidence - top2_conf, 4)
+    ambiguous = margin < 0.20
 
     alternatives = [
         {"crop": str(classes[i]), "confidence": float(proba[i])}
@@ -255,27 +284,40 @@ def predict(input_data: dict) -> dict:
 
     shap_dict = {f: float(v) for f, v in zip(ALL_FEATURES, shap_for_pred)}
 
+    # SHAP baseline: expected_value for the predicted class
+    ev = explainer.expected_value
+    if hasattr(ev, '__len__'):
+        shap_baseline = float(ev[predicted_class_idx])
+    else:
+        shap_baseline = float(ev)
+
     explanation = build_explanation(recommended_crop, shap_dict, input_data)
 
     # Fix 3: OOD detection
     ood_result = check_ood(input_data)
 
+    model_version = load_model_version()
+
     # Store to DW
     conn    = sqlite3.connect(DB_PATH)
-    fact_id = store_to_dw(conn, input_data, full_input, recommended_crop, confidence, shap_dict)
+    fact_id = store_to_dw(conn, input_data, full_input, recommended_crop, confidence, shap_dict, model_version)
     conn.close()
 
     return {
         "recommended_crop": recommended_crop,
         "confidence": confidence,
         "calibrated": True,
+        "margin": margin,
+        "ambiguous": ambiguous,
         "alternatives": alternatives,
         "shap_values": shap_dict,
+        "shap_baseline": shap_baseline,
         "explanation": explanation,
         "ood_warning": ood_result["ood_warning"],
         "ood_details": ood_result["ood_details"],
         "out_of_range_features": ood_result["out_of_range_features"],
         "anomaly_score": ood_result["anomaly_score"],
         "fact_id": fact_id,
+        "model_version": model_version,
         "timestamp": datetime.now().isoformat(),
     }

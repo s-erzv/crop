@@ -155,7 +155,9 @@ def create_star_schema(conn):
             shap_rainfall    REAL,
             shap_n_p_ratio   REAL,
             shap_n_k_ratio   REAL,
-            shap_ph_rainfall REAL
+            shap_ph_rainfall REAL,
+            user_feedback    INTEGER DEFAULT NULL,
+            model_version    TEXT
         );
     """)
     conn.commit()
@@ -177,7 +179,7 @@ def populate_dim_crop(conn, labels):
 
 def etl_training_with_shap(conn, df_train: pd.DataFrame, classes: np.ndarray,
                             shap_for_preds: np.ndarray, confidences: np.ndarray,
-                            y_train: np.ndarray):
+                            y_train: np.ndarray, model_version: str = ""):
     """Fix 4: Store ALL training rows to DW with full SHAP values."""
     cur = conn.cursor()
     now = datetime.now()
@@ -220,16 +222,18 @@ def etl_training_with_shap(conn, df_train: pd.DataFrame, classes: np.ndarray,
             (soil_id, climate_id, crop_id, time_id, confidence_score,
              is_training, true_label,
              shap_n, shap_p, shap_k, shap_temperature, shap_humidity, shap_ph, shap_rainfall,
-             shap_n_p_ratio, shap_n_k_ratio, shap_ph_rainfall)
+             shap_n_p_ratio, shap_n_k_ratio, shap_ph_rainfall,
+             model_version)
             VALUES (?, ?, ?, ?, ?, 1, ?,
                     ?, ?, ?, ?, ?, ?, ?,
-                    ?, ?, ?)
+                    ?, ?, ?, ?)
         """, (
             soil_id, climate_id, crop_id, time_id, confidence,
             true_label,
             float(sv[0]), float(sv[1]), float(sv[2]),
             float(sv[3]), float(sv[4]), float(sv[5]), float(sv[6]),
-            float(sv[7]), float(sv[8]), float(sv[9])
+            float(sv[7]), float(sv[8]), float(sv[9]),
+            model_version,
         ))
         count += 1
 
@@ -243,8 +247,10 @@ def etl_training_with_shap(conn, df_train: pd.DataFrame, classes: np.ndarray,
 
 def train():
     print("=" * 65)
-    print("CROP RECOMMENDATION MODEL TRAINING  (v2 — all fixes applied)")
+    print("CROP RECOMMENDATION MODEL TRAINING  (v3 — all fixes applied)")
     print("=" * 65)
+
+    model_version = datetime.now().isoformat()
 
     # ── 1. Load + feature engineering ─────────────────────────────────────
     df = pd.read_csv(DATA_PATH)
@@ -277,10 +283,10 @@ def train():
     rf = RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1)
     rf.fit(X_train, y_train)
 
-    # ── 5. Fix 2: Calibrated model (separate RF clone, isotonic cv=5) ─────
-    print("Training calibrated model (Isotonic Regression, cv=5)...")
+    # ── 5. Fix 2: Calibrated model — sigmoid (Platt Scaling) avoids 1.0-collapse
+    print("Training calibrated model (Sigmoid/Platt Scaling, cv=5)...")
     calib_rf = RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1)
-    calibrated_clf = CalibratedClassifierCV(calib_rf, method="isotonic", cv=5)
+    calibrated_clf = CalibratedClassifierCV(calib_rf, method="sigmoid", cv=5)
     calibrated_clf.fit(X_train, y_train)
     print("Calibration complete.")
 
@@ -328,7 +334,7 @@ def train():
     create_star_schema(conn)
     populate_dim_crop(conn, sorted(df["label"].unique().tolist()))
     etl_training_with_shap(conn, df_train, calibrated_clf.classes_,
-                           shap_for_preds, confidence_train, y_train)
+                           shap_for_preds, confidence_train, y_train, model_version)
     conn.close()
 
     # ── 9. Fix 3: IsolationForest OOD detector (on original 7 features) ──
@@ -345,6 +351,7 @@ def train():
     joblib.dump(ood_detector,    os.path.join(MODEL_DIR, "ood_detector.pkl"))
 
     evaluation = {
+        "model_version": model_version,
         "accuracy": round(acc, 4),
         "precision_macro": round(prec, 4),
         "recall_macro": round(rec, 4),

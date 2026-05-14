@@ -1,0 +1,146 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --forest-deep: #19381e;
+    --forest-mid: #2d6b32;
+    --forest-light: #5ea362;
+    --earth-warm: #d4802a;
+    --earth-light: #e3a040;
+    --parchment: #fdf9ec;
+    --bark: #3d2b1f;
+    --grain-overlay: rgba(0,0,0,0.03);
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-parchment-100 text-bark-800 font-body antialiased;
+    background-image:
+      radial-gradient(ellipse at 20% 50%, rgba(61, 134, 66, 0.06) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 20%, rgba(212, 128, 42, 0.05) 0%, transparent 50%);
+  }
+
+  * {
+    @apply border-forest-200;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-white/80 backdrop-blur-sm border border-forest-100 rounded-2xl shadow-sm;
+  }
+
+  .card-earth {
+    @apply bg-earth-50/80 backdrop-blur-sm border border-earth-200 rounded-2xl shadow-sm;
+  }
+
+  .btn-primary {
+    @apply bg-forest-700 hover:bg-forest-600 text-parchment-50 font-body font-medium px-6 py-3 rounded-xl transition-all duration-200 shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0;
+  }
+
+  .btn-secondary {
+    @apply bg-white/60 hover:bg-white border border-forest-200 text-forest-800 font-body font-medium px-6 py-3 rounded-xl transition-all duration-200;
+  }
+
+  .input-field {
+    @apply w-full bg-white/70 border border-forest-200 rounded-xl px-4 py-2.5 font-mono text-sm text-bark-900 focus:outline-none focus:ring-2 focus:ring-forest-400 focus:border-transparent transition-all duration-200;
+  }
+
+  .label-field {
+    @apply block text-xs font-body font-medium text-forest-700 uppercase tracking-wider mb-1.5;
+  }
+
+  .section-title {
+    @apply font-display text-2xl font-semibold text-forest-900;
+  }
+
+  .page-title {
+    @apply font-display text-4xl md:text-5xl font-bold text-forest-950 leading-tight;
+  }
+
+  .tag {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .tag-green {
+    @apply tag bg-forest-100 text-forest-800;
+  }
+
+  .tag-earth {
+    @apply tag bg-earth-100 text-earth-800;
+  }
+
+  .nav-link {
+    @apply text-forest-700 hover:text-forest-950 font-body font-medium text-sm transition-colors duration-200 relative;
+  }
+
+  .nav-link.active {
+    @apply text-forest-950;
+  }
+
+  .nav-link.active::after {
+    content: '';
+    @apply absolute -bottom-1 left-0 right-0 h-0.5 bg-earth-500 rounded-full;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    background: linear-gradient(135deg, var(--forest-deep) 0%, var(--forest-light) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .text-gradient-earth {
+    background: linear-gradient(135deg, var(--bark) 0%, var(--earth-warm) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .bg-field-pattern {
+    background-image:
+      linear-gradient(rgba(61, 134, 66, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(61, 134, 66, 0.05) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+
+  .glass {
+    @apply bg-white/60 backdrop-blur-md border border-white/50;
+  }
+
+  .animate-delay-100 { animation-delay: 100ms; }
+  .animate-delay-200 { animation-delay: 200ms; }
+  .animate-delay-300 { animation-delay: 300ms; }
+  .animate-delay-400 { animation-delay: 400ms; }
+  .animate-delay-500 { animation-delay: 500ms; }
+  .animate-delay-600 { animation-delay: 600ms; }
+
+  .opacity-0-init { opacity: 0; }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { @apply bg-forest-300 rounded-full; }
+::-webkit-scrollbar-thumb:hover { @apply bg-forest-400; }
+
+/* Range slider */
+input[type="range"] {
+  -webkit-appearance: none;
+  @apply w-full h-1.5 bg-forest-200 rounded-full outline-none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  @apply w-4 h-4 bg-forest-600 rounded-full cursor-pointer shadow-md;
+  transition: background 0.2s, transform 0.15s;
+}
+input[type="range"]::-webkit-slider-thumb:hover {
+  @apply bg-forest-500 scale-110;
+}

@@ -4,7 +4,7 @@ Run: uvicorn main:app --reload  (from backend/ directory)
 """
 
 import asyncio
-import json as _json
+import json
 import logging
 import os
 import sqlite3
@@ -28,7 +28,7 @@ class _JSONFormatter(logging.Formatter):
         }
         if record.exc_info:
             obj["exc"] = self.formatException(record.exc_info)
-        return _json.dumps(obj)
+        return json.dumps(obj)
 
 _handler = logging.StreamHandler()
 _handler.setFormatter(_JSONFormatter())
@@ -48,10 +48,13 @@ app = FastAPI(
     version="3.0.0"
 )
 
+_raw_origins = os.environ.get("ALLOWED_ORIGINS", "")
+_origins = [o.strip() for o in _raw_origins.split(",") if o.strip()] or ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
-    allow_credentials=True,
+    allow_origins=_origins,
+    allow_credentials="*" not in _origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )

@@ -1,0 +1,15 @@
+# Model artifacts — generated at container startup by train.py
+model/*.pkl
+model/evaluation.json
+model/feature_stats.json
+
+# Database — generated at startup
+crop_dw.db
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# OS
+.DS_Store

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import axios from 'axios'
+import API_BASE from '../api'
 import { Loader2, Sprout, Droplets, Thermometer, Wind, FlaskConical, CloudRain, Leaf } from 'lucide-react'
 import { useRecommendation, FormValues } from '../components/RecommendationContext'
 import RecentTable from '../components/RecentTable'
@@ -50,7 +51,7 @@ export default function HomePage() {
     setLoading(true)
     setError(null)
     try {
-      const { data } = await axios.post('http://localhost:8000/recommend', formValues)
+      const { data } = await axios.post(`${API_BASE}/recommend`, formValues)
       setResult(data)
       navigate('/result')
     } catch (err: unknown) {

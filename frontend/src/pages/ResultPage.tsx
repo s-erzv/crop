@@ -9,6 +9,7 @@ import {
   ResponsiveContainer, Cell, ReferenceLine
 } from 'recharts'
 import axios from 'axios'
+import API_BASE from '../api'
 import { useRecommendation } from '../components/RecommendationContext'
 
 const CROP_EMOJI: Record<string, string> = {
@@ -122,7 +123,7 @@ export default function ResultPage() {
     setFeedback(val)
     setFbSent(true)
     try {
-      await axios.post('http://localhost:8000/feedback', { fact_id: result.fact_id, feedback: val })
+      await axios.post(`${API_BASE}/feedback`, { fact_id: result.fact_id, feedback: val })
     } catch { /* fire-and-forget */ }
   }
 

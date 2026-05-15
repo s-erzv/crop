@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
+import API_BASE from '../api'
 import { Clock, Leaf, ChevronDown, RefreshCw } from 'lucide-react'
 
 interface HistoryItem {
@@ -34,7 +35,7 @@ export default function RecentTable() {
     try {
       const params: Record<string, string | number> = { limit: PAGE_SIZE, offset: off }
       if (crop) params.crop = crop
-      const { data } = await axios.get('http://localhost:8000/history', { params })
+      const { data } = await axios.get(`${API_BASE}/history`, { params })
       const fetched: HistoryItem[] = data.items || []
       setItems(off === 0 ? fetched : prev => [...prev, ...fetched])
       setTotal(data.total ?? 0)

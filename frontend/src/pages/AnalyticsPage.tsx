@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
+import API_BASE from '../api'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell
@@ -77,8 +78,8 @@ export default function AnalyticsPage() {
 
   useEffect(() => {
     Promise.all([
-      axios.get('http://localhost:8000/analytics'),
-      axios.get('http://localhost:8000/feature-importance')
+      axios.get(`${API_BASE}/analytics`),
+      axios.get(`${API_BASE}/feature-importance`)
     ]).then(([a, f]) => {
       setAnalytics(a.data)
       setFeatureImp(f.data)
@@ -98,7 +99,7 @@ export default function AnalyticsPage() {
 
   const handleDownloadCSV = async () => {
     try {
-      const { data } = await axios.get('http://localhost:8000/history', { params: { limit: 5000, offset: 0 } })
+      const { data } = await axios.get(`${API_BASE}/history`, { params: { limit: 5000, offset: 0 } })
       const rows: Record<string, unknown>[] = data.items || []
       if (!rows.length) return
 

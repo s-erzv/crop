@@ -9,15 +9,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          lfs: true
 
-      - name: Push to Hugging Face Space
+      - name: Push backend to Hugging Face Space
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
+          cd backend
+          git init
           git config user.email "action@github.com"
           git config user.name "GitHub Action"
+          git add .
+          git commit -m "sync from GitHub ${{ github.sha }}"
           git remote add space https://nupers:$HF_TOKEN@huggingface.co/spaces/nupers/crop
-          git push space main --force
+          git push space HEAD:main --force

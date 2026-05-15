@@ -64,31 +64,31 @@ export default function HomePage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-12">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
       {/* Fix 5: Toast notification */}
       {toast && (
         <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-forest-800 text-white
                         text-sm font-body px-5 py-3 rounded-xl shadow-xl border border-forest-600
-                        animate-fade-up whitespace-nowrap">
+                        animate-fade-up max-w-[90vw] text-center">
           {toast}
         </div>
       )}
       {/* Hero Header */}
-      <div className="mb-12 animate-fade-up">
+      <div className="mb-8 sm:mb-12 animate-fade-up">
         <div className="flex items-center gap-2 mb-4">
           <div className="w-px h-8 bg-earth-400" />
           <span className="font-mono text-xs text-earth-600 uppercase tracking-widest">Analitik Preskriptif</span>
         </div>
-        <h1 className="page-title mb-4">
+        <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold text-forest-950 leading-tight mb-4">
           Temukan Tanaman<br />
           <span className="text-gradient">Terbaik untuk Lahanmu</span>
         </h1>
-        <p className="font-body text-forest-600 text-lg max-w-xl leading-relaxed">
+        <p className="font-body text-forest-600 text-base sm:text-lg max-w-xl leading-relaxed">
           Masukkan kondisi tanah dan iklim lahan. Sistem akan merekomendasikan tanaman optimal dengan penjelasan berbasis AI.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 sm:gap-8">
         {/* Form */}
         <form onSubmit={handleSubmit} className="lg:col-span-3">
           <div className="card p-6 bg-field-pattern">

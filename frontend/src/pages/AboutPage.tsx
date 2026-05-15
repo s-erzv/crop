@@ -22,17 +22,17 @@ function SectionHeader({ icon, title }: { icon: React.ReactNode; title: string }
 
 export default function AboutPage() {
   return (
-    <div className="max-w-5xl mx-auto px-6 py-10">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
       {/* Header */}
       <div className="mb-10 animate-fade-up">
         <div className="flex items-center gap-2 mb-3">
           <div className="w-px h-6 bg-earth-400" />
           <span className="font-mono text-xs text-earth-600 uppercase tracking-widest">Dokumentasi Sistem — v3</span>
         </div>
-        <h1 className="font-display text-4xl font-bold text-forest-950 mb-3">
+        <h1 className="font-display text-3xl sm:text-4xl font-bold text-forest-950 mb-3">
           Cara Kerja CropSage
         </h1>
-        <p className="font-body text-forest-500 text-lg max-w-2xl">
+        <p className="font-body text-forest-500 text-base sm:text-lg max-w-2xl">
           Sistem rekomendasi tanaman berbasis Analitik Preskriptif yang menggabungkan Random Forest
           terkalibrasi, deteksi out-of-distribution, dan SHAP untuk menghasilkan saran yang dapat dijelaskan.
         </p>

@@ -159,12 +159,12 @@ export default function ResultPage() {
   const maxAbs = Math.max(...shapData.map(d => d.absValue), 0.001)
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-10">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
       {/* Toast */}
       {toast && (
         <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-forest-800 text-white
                         text-sm font-body px-5 py-3 rounded-xl shadow-xl border border-forest-600
-                        animate-fade-up">
+                        animate-fade-up max-w-[90vw] text-center">
           {toast}
         </div>
       )}
@@ -234,7 +234,7 @@ export default function ResultPage() {
             <div className="bg-gradient-to-br from-forest-700 to-forest-900 p-6 text-white relative overflow-hidden">
               <div className="absolute inset-0 bg-field-pattern opacity-10" />
               <div className="relative">
-                <div className="flex items-start justify-between mb-4">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
                   <div>
                     <div className="flex items-center gap-2 mb-2">
                       <Award size={16} className="text-earth-300" />
@@ -243,9 +243,9 @@ export default function ResultPage() {
                       </span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="text-5xl">{CROP_EMOJI[result.recommended_crop] || '🌱'}</span>
+                      <span className="text-4xl sm:text-5xl">{CROP_EMOJI[result.recommended_crop] || '🌱'}</span>
                       <div>
-                        <h2 className="font-display text-3xl font-bold capitalize leading-tight">
+                        <h2 className="font-display text-2xl sm:text-3xl font-bold capitalize leading-tight">
                           {result.recommended_crop}
                         </h2>
                         <p className="font-body text-forest-300 text-sm mt-0.5">
@@ -336,7 +336,7 @@ export default function ResultPage() {
 
             <ResponsiveContainer width="100%" height={250}>
               <BarChart data={shapData} layout="vertical"
-                        margin={{ left: 10, right: 40, top: 0, bottom: 0 }}>
+                        margin={{ left: 0, right: 30, top: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5efea" horizontal={false} />
                 <XAxis
                   type="number"
@@ -345,8 +345,8 @@ export default function ResultPage() {
                   domain={[-maxAbs * 1.15, maxAbs * 1.15]}
                 />
                 <YAxis
-                  type="category" dataKey="feature" width={105}
-                  tick={{ fontFamily: 'DM Sans', fontSize: 11, fill: '#2d5e30' }}
+                  type="category" dataKey="feature" width={85}
+                  tick={{ fontFamily: 'DM Sans', fontSize: 10, fill: '#2d5e30' }}
                 />
                 <Tooltip content={<ShapTooltip />} />
                 <ReferenceLine x={0} stroke="#9bb89e" strokeWidth={1.5} />

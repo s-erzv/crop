@@ -115,9 +115,9 @@ export default function RecentTable() {
           <thead>
             <tr className="bg-forest-50/50 border-b border-forest-100">
               <th className="text-left px-4 py-3 font-mono text-xs text-forest-500 uppercase tracking-wide">Tanaman</th>
-              <th className="text-left px-4 py-3 font-mono text-xs text-forest-500 uppercase tracking-wide">Kategori</th>
+              <th className="hidden sm:table-cell text-left px-4 py-3 font-mono text-xs text-forest-500 uppercase tracking-wide">Kategori</th>
               <th className="text-right px-4 py-3 font-mono text-xs text-forest-500 uppercase tracking-wide">Keyakinan</th>
-              <th className="text-right px-4 py-3 font-mono text-xs text-forest-500 uppercase tracking-wide">N / P / K</th>
+              <th className="hidden sm:table-cell text-right px-4 py-3 font-mono text-xs text-forest-500 uppercase tracking-wide">N / P / K</th>
               <th className="text-right px-4 py-3 font-mono text-xs text-forest-500 uppercase tracking-wide">Waktu</th>
             </tr>
           </thead>
@@ -132,7 +132,7 @@ export default function RecentTable() {
                     <span className="font-body font-medium text-sm text-forest-900 capitalize">{item.crop}</span>
                   </div>
                 </td>
-                <td className="px-4 py-3">
+                <td className="hidden sm:table-cell px-4 py-3">
                   <span className="tag-earth font-body text-xs">{item.category}</span>
                 </td>
                 <td className="px-4 py-3 text-right">
@@ -140,7 +140,7 @@ export default function RecentTable() {
                     {(item.confidence * 100).toFixed(1)}%
                   </span>
                 </td>
-                <td className="px-4 py-3 text-right">
+                <td className="hidden sm:table-cell px-4 py-3 text-right">
                   <span className="font-mono text-xs text-forest-500">
                     {item.inputs.N?.toFixed(0)} / {item.inputs.P?.toFixed(0)} / {item.inputs.K?.toFixed(0)}
                   </span>

@@ -168,24 +168,24 @@ export default function AnalyticsPage() {
   const cropOptions = analytics?.crop_shap_importance.map(r => r.crop) || []
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-10">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
       {/* Header */}
-      <div className="mb-10 flex items-end justify-between animate-fade-up">
+      <div className="mb-8 sm:mb-10 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 animate-fade-up">
         <div>
           <div className="flex items-center gap-2 mb-3">
             <div className="w-px h-6 bg-earth-400" />
             <span className="font-mono text-xs text-earth-600 uppercase tracking-widest">Dashboard Analitik</span>
           </div>
-          <h1 className="font-display text-4xl font-bold text-forest-950">
+          <h1 className="font-display text-3xl sm:text-4xl font-bold text-forest-950">
             Wawasan & Statistik
           </h1>
-          <p className="font-body text-forest-500 mt-2">
+          <p className="font-body text-forest-500 mt-2 text-sm sm:text-base">
             Distribusi rekomendasi, performa model, dan kepentingan fitur dari {(analytics?.training_crop_distribution || []).reduce((s, r) => s + r.count, 0)} sampel training.
           </p>
         </div>
 
-        <div className="flex flex-col items-end gap-2">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col items-start sm:items-end gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={handleDownloadCSV}
               className="flex items-center gap-2 px-4 py-2 bg-forest-50 hover:bg-forest-100

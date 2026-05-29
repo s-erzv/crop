@@ -1,0 +1,101 @@
+[
+  {
+    "model": "Random Forest (base)",
+    "accuracy": 99.55,
+    "precision_macro": 99.57,
+    "recall_macro": 99.55,
+    "f1_macro": 99.55,
+    "train_time_s": 0.147,
+    "infer_time_ms": 13.79
+  },
+  {
+    "model": "Random Forest + Calibration (OURS)",
+    "accuracy": 99.32,
+    "precision_macro": 99.35,
+    "recall_macro": 99.32,
+    "f1_macro": 99.32,
+    "train_time_s": 0.865,
+    "infer_time_ms": 72.9
+  },
+  {
+    "model": "Extra Trees",
+    "accuracy": 99.09,
+    "precision_macro": 99.15,
+    "recall_macro": 99.09,
+    "f1_macro": 99.09,
+    "train_time_s": 0.101,
+    "infer_time_ms": 14.13
+  },
+  {
+    "model": "Naive Bayes",
+    "accuracy": 99.09,
+    "precision_macro": 99.15,
+    "recall_macro": 99.09,
+    "f1_macro": 99.09,
+    "train_time_s": 0.003,
+    "infer_time_ms": 0.8
+  },
+  {
+    "model": "Gradient Boosting",
+    "accuracy": 98.86,
+    "precision_macro": 98.97,
+    "recall_macro": 98.86,
+    "f1_macro": 98.87,
+    "train_time_s": 11.116,
+    "infer_time_ms": 18.72
+  },
+  {
+    "model": "LightGBM",
+    "accuracy": 98.41,
+    "precision_macro": 98.54,
+    "recall_macro": 98.41,
+    "f1_macro": 98.4,
+    "train_time_s": 4.27,
+    "infer_time_ms": 14.71
+  },
+  {
+    "model": "Decision Tree",
+    "accuracy": 98.18,
+    "precision_macro": 98.3,
+    "recall_macro": 98.18,
+    "f1_macro": 98.17,
+    "train_time_s": 0.016,
+    "infer_time_ms": 0.16
+  },
+  {
+    "model": "Logistic Regression",
+    "accuracy": 95.0,
+    "precision_macro": 95.31,
+    "recall_macro": 95.0,
+    "f1_macro": 95.02,
+    "train_time_s": 0.603,
+    "infer_time_ms": 1.88
+  },
+  {
+    "model": "K-Nearest Neighbors (k=5)",
+    "accuracy": 92.5,
+    "precision_macro": 92.98,
+    "recall_macro": 92.5,
+    "f1_macro": 92.35,
+    "train_time_s": 0.004,
+    "infer_time_ms": 15.36
+  },
+  {
+    "model": "MLP Neural Network",
+    "accuracy": 92.05,
+    "precision_macro": 93.76,
+    "recall_macro": 92.05,
+    "f1_macro": 91.66,
+    "train_time_s": 0.543,
+    "infer_time_ms": 0.58
+  },
+  {
+    "model": "SVM (RBF kernel)",
+    "accuracy": 68.18,
+    "precision_macro": 66.03,
+    "recall_macro": 68.18,
+    "f1_macro": 64.64,
+    "train_time_s": 0.323,
+    "infer_time_ms": 50.26
+  }
+]

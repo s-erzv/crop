@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Outlet, NavLink } from 'react-router-dom'
-import { Leaf, BarChart2, Info, Sprout, Menu, X } from 'lucide-react'
+import { Leaf, BarChart2, Info, Menu, X } from 'lucide-react'
 
 export default function Layout() {
   const [menuOpen, setMenuOpen] = useState(false)
@@ -15,9 +15,6 @@ export default function Layout() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           {/* Logo */}
           <NavLink to="/" className="flex items-center gap-2.5 group" onClick={() => setMenuOpen(false)}>
-            <div className="w-8 h-8 bg-forest-700 rounded-lg flex items-center justify-center shadow-md group-hover:bg-forest-600 transition-colors">
-              <Sprout className="w-4.5 h-4.5 text-parchment-100" size={18} />
-            </div>
             <span className="font-display font-bold text-xl text-forest-950">
               Crop<span className="text-earth-500">Sage</span>
             </span>
@@ -107,7 +104,7 @@ export default function Layout() {
         <p className="font-body text-xs text-forest-500">
           CropSage — Sistem Pendukung Keputusan Analitik Preskriptif
           <span className="mx-2">·</span>
-          Powered by Random Forest + SHAP
+          Ditenagai Random Forest + SHAP
         </p>
       </footer>
     </div>

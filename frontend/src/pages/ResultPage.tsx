@@ -62,12 +62,12 @@ function ConfidenceBar({ value, calibrated }: { value: number; calibrated: boole
     <div className="text-right">
       <div className="flex items-center justify-end gap-2 mb-1">
         <span className="font-mono text-xs text-forest-400 uppercase tracking-wide">
-          Model Confidence
+          Kepercayaan Model
         </span>
         <InfoTooltip text="Skor probabilitas terkalibrasi menggunakan Sigmoid (Platt Scaling) dari 100 decision tree. Nilai ini mencerminkan keyakinan model yang lebih realistis dibanding raw probability." />
         {calibrated && (
           <span className="px-1.5 py-0.5 bg-earth-700/60 text-earth-300 text-xs font-mono rounded-md border border-earth-600/40">
-            Calibrated
+            Terkalibrasi
           </span>
         )}
       </div>

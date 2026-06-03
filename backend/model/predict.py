@@ -131,37 +131,128 @@ def check_ood(input_data: dict) -> dict:
 
 
 def build_explanation(crop: str, shap_dict: dict, input_data: dict) -> str:
+    """
+    Prescriptive DSS explanation with four sections:
+    DECISION · WHY (SHAP) · ACTION PLAN · RISK ASSESSMENT
+    """
     name = crop.capitalize()
-    # Use only original features for explanation (engineered features are less intuitive)
+
+    # Per-feature agronomic context: (optimal_low, optimal_high, unit, action_if_low, action_if_high, risk_if_low, risk_if_high)
+    AGRONOMIC = {
+        "N": (40, 80, "mg/kg",
+              "Apply nitrogen fertilizer (urea or ammonium sulfate) at 50–80 kg/ha before planting.",
+              "Split nitrogen application into 2–3 doses to prevent leaching and root burn.",
+              "Low nitrogen limits leaf development and reduces yield by up to 40%.",
+              "Excess nitrogen causes excessive vegetative growth, pest susceptibility, and water contamination."),
+        "P": (30, 70, "mg/kg",
+              "Apply phosphate fertilizer (TSP or DAP) at planting — phosphorus is most effective when soil-incorporated.",
+              "Reduce phosphate input; excess P can lock out zinc and iron uptake.",
+              "Low phosphorus stunts root development and delays flowering.",
+              "Excess phosphorus can trigger iron and zinc deficiency symptoms."),
+        "K": (30, 70, "mg/kg",
+              "Apply potassium chloride (KCl) or potassium sulfate (K₂SO₄) to boost disease resistance and water efficiency.",
+              "Reduce potassium input; excess K can inhibit magnesium and calcium absorption.",
+              "Low potassium weakens cell walls, increases disease susceptibility, and reduces drought tolerance.",
+              "Excess potassium disrupts cation balance and can cause magnesium deficiency."),
+        "temperature": (15, 35, "°C",
+                        "Consider planting in a warmer season or use mulching to retain soil heat.",
+                        "Plant in a cooler season, provide shade nets, or use drought-tolerant varieties.",
+                        "Low temperature slows germination and growth; frost risk below 5°C.",
+                        "High temperature causes heat stress, accelerates water loss, and may trigger early flowering."),
+        "humidity": (50, 90, "%",
+                     "Use drip irrigation or increase watering frequency to raise effective humidity around the crop.",
+                     "Improve field drainage and air circulation to prevent fungal diseases.",
+                     "Low humidity increases transpiration stress and may require more frequent irrigation.",
+                     "High humidity promotes fungal diseases (e.g., downy mildew, blight); apply fungicide preventively."),
+        "ph": (5.5, 7.5, "",
+               "Apply agricultural lime (CaCO₃) at 1–2 tons/ha to raise pH; retest after 4–6 weeks.",
+               "Apply elemental sulfur or aluminum sulfate to lower pH gradually.",
+               "Acidic soil locks out phosphorus, calcium, and magnesium — key nutrients become unavailable.",
+               "Alkaline soil causes iron, zinc, and manganese deficiency; can reduce yield by 20–30%."),
+        "rainfall": (50, 200, "mm",
+                     "Supplement with irrigation (drip or sprinkler) at 5–10 mm/day during dry periods.",
+                     "Ensure field drainage channels are clear; consider raised beds or ridge planting.",
+                     "Insufficient rainfall causes drought stress; prioritize drought-tolerant varieties if irrigation is unavailable.",
+                     "Waterlogging causes root anoxia and disease; ensure drainage within 24–48 hours of heavy rain."),
+    }
+
     orig_shap = {k: v for k, v in shap_dict.items() if k in ORIGINAL_FEATURES}
     sorted_features = sorted(orig_shap.items(), key=lambda x: abs(x[1]), reverse=True)
 
-    parts = [f"Recommend **{name}** because:"]
-    thresholds = {
-        "N": (40, 80), "P": (30, 70), "K": (30, 70),
-        "temperature": (15, 35), "humidity": (50, 90),
-        "ph": (5.5, 7.5), "rainfall": (50, 200)
-    }
+    # ── SECTION 1: DECISION ──────────────────────────────────────────────────
+    lines = [f"**DECISION:** Plant {name}."]
 
-    for feat, shap_val in sorted_features[:4]:
-        val   = input_data[feat]
+    # ── SECTION 2: WHY — top 3 driving features ──────────────────────────────
+    lines.append("\n**WHY THIS CROP?**")
+    drivers_added = 0
+    for feat, shap_val in sorted_features:
+        if abs(shap_val) < 0.005:
+            continue
+        val = input_data[feat]
         label = FEATURE_LABELS[feat]
-        low, high = thresholds.get(feat, (0, 100))
+        ag = AGRONOMIC.get(feat)
+        if ag is None:
+            continue
+        low, high, unit = ag[0], ag[1], ag[2]
+        unit_str = f" {unit}" if unit else ""
 
         if shap_val > 0.01:
             if val < low:
-                parts.append(f"• {label} ({val:.1f}) is on the low side but still supports {name} growth")
+                lines.append(f"• {label} is {val:.1f}{unit_str} (below optimal {low}–{high}) — slightly constraining but {name} can still establish; see action plan.")
             elif val > high:
-                parts.append(f"• {label} ({val:.1f}) is high, strongly favoring {name}")
+                lines.append(f"• {label} is {val:.1f}{unit_str} (above optimal {low}–{high}) — {name} is highly adapted to these conditions.")
             else:
-                parts.append(f"• {label} ({val:.1f}) is in the optimal range for {name}")
+                lines.append(f"• {label} is {val:.1f}{unit_str} — squarely in the optimal range ({low}–{high}) for {name}.")
         elif shap_val < -0.01:
             if val < low:
-                parts.append(f"• {label} ({val:.1f}) is below the ideal range — consider increasing it for better yield")
+                lines.append(f"• {label} is {val:.1f}{unit_str} — below optimal; this is the main limiting factor for {name} yield.")
             elif val > high:
-                parts.append(f"• {label} ({val:.1f}) is above the ideal range — consider reducing it")
+                lines.append(f"• {label} is {val:.1f}{unit_str} — above optimal; requires corrective action before planting.")
+        drivers_added += 1
+        if drivers_added >= 3:
+            break
 
-    return " ".join(parts[:1]) + "\n" + "\n".join(parts[1:])
+    # ── SECTION 3: ACTION PLAN ───────────────────────────────────────────────
+    lines.append("\n**ACTION PLAN:**")
+    actions_added = 0
+    for feat, shap_val in sorted_features:
+        val = input_data[feat]
+        ag  = AGRONOMIC.get(feat)
+        if ag is None:
+            continue
+        low, high, unit, act_low, act_high, _, _ = ag
+        if val < low:
+            lines.append(f"• {FEATURE_LABELS[feat]}: {act_low}")
+            actions_added += 1
+        elif val > high:
+            lines.append(f"• {FEATURE_LABELS[feat]}: {act_high}")
+            actions_added += 1
+        if actions_added >= 3:
+            break
+
+    if actions_added == 0:
+        lines.append(f"• All key soil and climate parameters are within optimal range. Maintain current conditions and follow standard {name} cultivation practices.")
+
+    # ── SECTION 4: RISK ASSESSMENT ───────────────────────────────────────────
+    lines.append("\n**RISK ASSESSMENT:**")
+    risks = []
+    for feat, shap_val in sorted_features:
+        val = input_data[feat]
+        ag  = AGRONOMIC.get(feat)
+        if ag is None:
+            continue
+        low, high, unit, _, _, risk_low, risk_high = ag
+        if val < low:
+            risks.append(f"⚠ {FEATURE_LABELS[feat]} deficit — {risk_low}")
+        elif val > high:
+            risks.append(f"⚠ {FEATURE_LABELS[feat]} excess — {risk_high}")
+
+    if risks:
+        lines.extend(risks[:3])
+    else:
+        lines.append("✓ No major risk factors detected. Conditions are well-suited for {name} cultivation.".format(name=name))
+
+    return "\n".join(lines)
 
 
 def store_to_dw(conn, input_data_orig: dict, input_data_full: dict,

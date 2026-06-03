@@ -17,22 +17,11 @@ ORIGINAL_FEATURES   = ["N", "P", "K", "temperature", "humidity", "ph", "rainfall
 ENGINEERED_FEATURES = ["N_P_ratio", "N_K_ratio", "pH_rainfall"]
 ALL_FEATURES        = ORIGINAL_FEATURES + ENGINEERED_FEATURES
 
-FEATURE_LABELS_ID = {
-    "N": "Nitrogen (N)", "P": "Fosfor (P)", "K": "Kalium (K)",
-    "temperature": "Suhu", "humidity": "Kelembaban",
-    "ph": "pH Tanah", "rainfall": "Curah Hujan",
-    "N_P_ratio": "Rasio N/P", "N_K_ratio": "Rasio N/K", "pH_rainfall": "pH × Hujan"
-}
-
-CROP_NAMES_ID = {
-    "rice": "Padi", "maize": "Jagung", "chickpea": "Buncis Arab",
-    "kidneybeans": "Kacang Merah", "pigeonpeas": "Kacang Gude",
-    "mothbeans": "Kacang Moth", "mungbean": "Kacang Hijau",
-    "blackgram": "Kacang Hitam", "lentil": "Lentil",
-    "pomegranate": "Delima", "banana": "Pisang", "mango": "Mangga",
-    "grapes": "Anggur", "watermelon": "Semangka", "muskmelon": "Melon",
-    "apple": "Apel", "orange": "Jeruk", "papaya": "Pepaya",
-    "coconut": "Kelapa", "cotton": "Kapas", "jute": "Rami", "coffee": "Kopi"
+FEATURE_LABELS = {
+    "N": "Nitrogen (N)", "P": "Phosphorus (P)", "K": "Potassium (K)",
+    "temperature": "Temperature", "humidity": "Humidity",
+    "ph": "Soil pH", "rainfall": "Rainfall",
+    "N_P_ratio": "N/P Ratio", "N_K_ratio": "N/K Ratio", "pH_rainfall": "pH × Rainfall"
 }
 
 # ── Artifact cache ────────────────────────────────────────────────────────────
@@ -98,17 +87,17 @@ def check_ood(input_data: dict) -> dict:
     if npk_total < 1.0:
         out_of_range.append("N_P_K_combined")
         detail_parts.append(
-            f"Total N+P+K ({npk_total:.1f}) mendekati nol — input kemungkinan tidak valid"
+            f"Total N+P+K ({npk_total:.1f}) is near zero — input is likely invalid"
         )
 
     for feat in ORIGINAL_FEATURES:
         val   = input_data[feat]
         stats = feature_stats[feat]
         if val < stats["p1"] or val > stats["p99"]:
-            label = FEATURE_LABELS_ID[feat]
+            label = FEATURE_LABELS[feat]
             out_of_range.append(feat)
             detail_parts.append(
-                f"{label} ({val:.1f}) di luar rentang tipikal "
+                f"{label} ({val:.1f}) is outside the typical range "
                 f"({stats['p1']:.1f}–{stats['p99']:.1f})"
             )
 
@@ -121,14 +110,14 @@ def check_ood(input_data: dict) -> dict:
 
     if detail_parts:
         ood_details = (
-            "Input di luar distribusi data training: "
+            "Input is outside the training data distribution: "
             + "; ".join(detail_parts)
-            + ". Confidence mungkin tidak akurat."
+            + ". Confidence may not be accurate."
         )
     elif is_anomaly:
         ood_details = (
-            "Kombinasi nilai input tidak biasa dibandingkan data training "
-            "(IsolationForest score: {:.3f}). Confidence mungkin tidak akurat.".format(anomaly_score)
+            "The combination of input values is unusual compared to training data "
+            "(IsolationForest score: {:.3f}). Confidence may not be accurate.".format(anomaly_score)
         )
     else:
         ood_details = ""
@@ -142,12 +131,12 @@ def check_ood(input_data: dict) -> dict:
 
 
 def build_explanation(crop: str, shap_dict: dict, input_data: dict) -> str:
-    crop_id = CROP_NAMES_ID.get(crop, crop.capitalize())
+    name = crop.capitalize()
     # Use only original features for explanation (engineered features are less intuitive)
     orig_shap = {k: v for k, v in shap_dict.items() if k in ORIGINAL_FEATURES}
     sorted_features = sorted(orig_shap.items(), key=lambda x: abs(x[1]), reverse=True)
 
-    parts = [f"Rekomendasikan **{crop_id}** karena:"]
+    parts = [f"Recommend **{name}** because:"]
     thresholds = {
         "N": (40, 80), "P": (30, 70), "K": (30, 70),
         "temperature": (15, 35), "humidity": (50, 90),
@@ -156,21 +145,21 @@ def build_explanation(crop: str, shap_dict: dict, input_data: dict) -> str:
 
     for feat, shap_val in sorted_features[:4]:
         val   = input_data[feat]
-        label = FEATURE_LABELS_ID[feat]
+        label = FEATURE_LABELS[feat]
         low, high = thresholds.get(feat, (0, 100))
 
         if shap_val > 0.01:
             if val < low:
-                parts.append(f"• {label} ({val:.1f}) cukup rendah, tetapi masih mendukung pertumbuhan {crop_id}")
+                parts.append(f"• {label} ({val:.1f}) is on the low side but still supports {name} growth")
             elif val > high:
-                parts.append(f"• {label} ({val:.1f}) tinggi, sangat mendukung {crop_id}")
+                parts.append(f"• {label} ({val:.1f}) is high, strongly favoring {name}")
             else:
-                parts.append(f"• {label} ({val:.1f}) berada di rentang optimal untuk {crop_id}")
+                parts.append(f"• {label} ({val:.1f}) is in the optimal range for {name}")
         elif shap_val < -0.01:
             if val < low:
-                parts.append(f"• {label} ({val:.1f}) perlu ditingkatkan untuk hasil lebih baik")
+                parts.append(f"• {label} ({val:.1f}) is below the ideal range — consider increasing it for better yield")
             elif val > high:
-                parts.append(f"• {label} ({val:.1f}) terlalu tinggi, perlu dikurangi")
+                parts.append(f"• {label} ({val:.1f}) is above the ideal range — consider reducing it")
 
     return " ".join(parts[:1]) + "\n" + "\n".join(parts[1:])
 

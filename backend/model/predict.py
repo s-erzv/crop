@@ -18,10 +18,10 @@ ENGINEERED_FEATURES = ["N_P_ratio", "N_K_ratio", "pH_rainfall"]
 ALL_FEATURES        = ORIGINAL_FEATURES + ENGINEERED_FEATURES
 
 FEATURE_LABELS = {
-    "N": "Nitrogen (N)", "P": "Phosphorus (P)", "K": "Potassium (K)",
-    "temperature": "Temperature", "humidity": "Humidity",
-    "ph": "Soil pH", "rainfall": "Rainfall",
-    "N_P_ratio": "N/P Ratio", "N_K_ratio": "N/K Ratio", "pH_rainfall": "pH × Rainfall"
+    "N": "Nitrogen (N)", "P": "Fosfor (P)", "K": "Kalium (K)",
+    "temperature": "Suhu", "humidity": "Kelembaban",
+    "ph": "pH Tanah", "rainfall": "Curah Hujan",
+    "N_P_ratio": "Rasio N/P", "N_K_ratio": "Rasio N/K", "pH_rainfall": "pH × Hujan"
 }
 
 # ── Artifact cache ────────────────────────────────────────────────────────────
@@ -140,50 +140,50 @@ def build_explanation(crop: str, shap_dict: dict, input_data: dict) -> str:
     # Per-feature agronomic context: (optimal_low, optimal_high, unit, action_if_low, action_if_high, risk_if_low, risk_if_high)
     AGRONOMIC = {
         "N": (40, 80, "mg/kg",
-              "Apply nitrogen fertilizer (urea or ammonium sulfate) at 50–80 kg/ha before planting.",
-              "Split nitrogen application into 2–3 doses to prevent leaching and root burn.",
-              "Low nitrogen limits leaf development and reduces yield by up to 40%.",
-              "Excess nitrogen causes excessive vegetative growth, pest susceptibility, and water contamination."),
+              "Tambahkan pupuk nitrogen (urea atau ZA) sebesar 50–80 kg/ha sebelum tanam.",
+              "Bagi pemberian nitrogen menjadi 2–3 tahap untuk mencegah pencucian dan kerusakan akar.",
+              "Nitrogen rendah menghambat perkembangan daun dan dapat menurunkan hasil panen hingga 40%.",
+              "Kelebihan nitrogen menyebabkan pertumbuhan vegetatif berlebihan, rentan hama, dan pencemaran air."),
         "P": (30, 70, "mg/kg",
-              "Apply phosphate fertilizer (TSP or DAP) at planting — phosphorus is most effective when soil-incorporated.",
-              "Reduce phosphate input; excess P can lock out zinc and iron uptake.",
-              "Low phosphorus stunts root development and delays flowering.",
-              "Excess phosphorus can trigger iron and zinc deficiency symptoms."),
+              "Berikan pupuk fosfat (TSP atau DAP) saat tanam — fosfor paling efektif bila dicampur ke dalam tanah.",
+              "Kurangi pemberian fosfat; kelebihan P dapat menghambat penyerapan seng dan besi.",
+              "Fosfor rendah menghambat perkembangan akar dan memperlambat pembungaan.",
+              "Kelebihan fosfor dapat memicu gejala defisiensi seng dan besi."),
         "K": (30, 70, "mg/kg",
-              "Apply potassium chloride (KCl) or potassium sulfate (K₂SO₄) to boost disease resistance and water efficiency.",
-              "Reduce potassium input; excess K can inhibit magnesium and calcium absorption.",
-              "Low potassium weakens cell walls, increases disease susceptibility, and reduces drought tolerance.",
-              "Excess potassium disrupts cation balance and can cause magnesium deficiency."),
+              "Berikan kalium klorida (KCl) atau kalium sulfat (K₂SO₄) untuk meningkatkan ketahanan penyakit dan efisiensi air.",
+              "Kurangi input kalium; kelebihan K dapat menghambat penyerapan magnesium dan kalsium.",
+              "Kalium rendah melemahkan dinding sel, meningkatkan kerentanan penyakit, dan mengurangi toleransi kekeringan.",
+              "Kelebihan kalium mengganggu keseimbangan kation dan dapat menyebabkan defisiensi magnesium."),
         "temperature": (15, 35, "°C",
-                        "Consider planting in a warmer season or use mulching to retain soil heat.",
-                        "Plant in a cooler season, provide shade nets, or use drought-tolerant varieties.",
-                        "Low temperature slows germination and growth; frost risk below 5°C.",
-                        "High temperature causes heat stress, accelerates water loss, and may trigger early flowering."),
+                        "Pertimbangkan penanaman di musim yang lebih hangat atau gunakan mulsa untuk menjaga suhu tanah.",
+                        "Tanam di musim yang lebih sejuk, pasang jaring peneduh, atau gunakan varietas tahan panas.",
+                        "Suhu rendah memperlambat perkecambahan dan pertumbuhan; risiko frost di bawah 5°C.",
+                        "Suhu tinggi menyebabkan stres panas, mempercepat kehilangan air, dan dapat memicu pembungaan dini."),
         "humidity": (50, 90, "%",
-                     "Use drip irrigation or increase watering frequency to raise effective humidity around the crop.",
-                     "Improve field drainage and air circulation to prevent fungal diseases.",
-                     "Low humidity increases transpiration stress and may require more frequent irrigation.",
-                     "High humidity promotes fungal diseases (e.g., downy mildew, blight); apply fungicide preventively."),
+                     "Gunakan irigasi tetes atau tingkatkan frekuensi penyiraman untuk menjaga kelembaban di sekitar tanaman.",
+                     "Perbaiki drainase lahan dan sirkulasi udara untuk mencegah penyakit jamur.",
+                     "Kelembaban rendah meningkatkan stres transpirasi dan memerlukan irigasi lebih sering.",
+                     "Kelembaban tinggi mendorong penyakit jamur (embun bulu, hawar); aplikasikan fungisida secara preventif."),
         "ph": (5.5, 7.5, "",
-               "Apply agricultural lime (CaCO₃) at 1–2 tons/ha to raise pH; retest after 4–6 weeks.",
-               "Apply elemental sulfur or aluminum sulfate to lower pH gradually.",
-               "Acidic soil locks out phosphorus, calcium, and magnesium — key nutrients become unavailable.",
-               "Alkaline soil causes iron, zinc, and manganese deficiency; can reduce yield by 20–30%."),
+               "Tambahkan kapur pertanian (CaCO₃) 1–2 ton/ha untuk menaikkan pH; uji ulang setelah 4–6 minggu.",
+               "Tambahkan belerang elemental atau aluminium sulfat untuk menurunkan pH secara bertahap.",
+               "Tanah asam mengunci fosfor, kalsium, dan magnesium — nutrisi utama menjadi tidak tersedia.",
+               "Tanah basa menyebabkan defisiensi besi, seng, dan mangan; dapat menurunkan hasil 20–30%."),
         "rainfall": (50, 200, "mm",
-                     "Supplement with irrigation (drip or sprinkler) at 5–10 mm/day during dry periods.",
-                     "Ensure field drainage channels are clear; consider raised beds or ridge planting.",
-                     "Insufficient rainfall causes drought stress; prioritize drought-tolerant varieties if irrigation is unavailable.",
-                     "Waterlogging causes root anoxia and disease; ensure drainage within 24–48 hours of heavy rain."),
+                     "Tambah irigasi (tetes atau sprinkler) 5–10 mm/hari selama periode kering.",
+                     "Pastikan saluran drainase lahan bersih; pertimbangkan bedengan tinggi atau pematang.",
+                     "Curah hujan kurang menyebabkan stres kekeringan; prioritaskan varietas tahan kering bila irigasi tidak tersedia.",
+                     "Genangan air menyebabkan anoksia akar dan penyakit; pastikan drainase dalam 24–48 jam setelah hujan deras."),
     }
 
     orig_shap = {k: v for k, v in shap_dict.items() if k in ORIGINAL_FEATURES}
     sorted_features = sorted(orig_shap.items(), key=lambda x: abs(x[1]), reverse=True)
 
     # ── SECTION 1: DECISION ──────────────────────────────────────────────────
-    lines = [f"**DECISION:** Plant {name}."]
+    lines = [f"Rekomendasi: Tanam {name}."]
 
-    # ── SECTION 2: WHY — top 3 driving features ──────────────────────────────
-    lines.append("\n**WHY THIS CROP?**")
+    # ── SECTION 2: MENGAPA — top 3 driving features ───────────────────────────
+    lines.append("\nMengapa tanaman ini?")
     drivers_added = 0
     for feat, shap_val in sorted_features:
         if abs(shap_val) < 0.005:
@@ -198,22 +198,22 @@ def build_explanation(crop: str, shap_dict: dict, input_data: dict) -> str:
 
         if shap_val > 0.01:
             if val < low:
-                lines.append(f"• {label} is {val:.1f}{unit_str} (below optimal {low}–{high}) — slightly constraining but {name} can still establish; see action plan.")
+                lines.append(f"• {label} sebesar {val:.1f}{unit_str} (di bawah optimal {low}–{high}) — sedikit membatasi, namun {name} masih bisa tumbuh; lihat rencana tindakan.")
             elif val > high:
-                lines.append(f"• {label} is {val:.1f}{unit_str} (above optimal {low}–{high}) — {name} is highly adapted to these conditions.")
+                lines.append(f"• {label} sebesar {val:.1f}{unit_str} (di atas optimal {low}–{high}) — {name} sangat cocok dengan kondisi ini.")
             else:
-                lines.append(f"• {label} is {val:.1f}{unit_str} — squarely in the optimal range ({low}–{high}) for {name}.")
+                lines.append(f"• {label} sebesar {val:.1f}{unit_str} — berada di rentang optimal ({low}–{high}) untuk {name}.")
         elif shap_val < -0.01:
             if val < low:
-                lines.append(f"• {label} is {val:.1f}{unit_str} — below optimal; this is the main limiting factor for {name} yield.")
+                lines.append(f"• {label} sebesar {val:.1f}{unit_str} — di bawah optimal; ini faktor pembatas utama hasil {name}.")
             elif val > high:
-                lines.append(f"• {label} is {val:.1f}{unit_str} — above optimal; requires corrective action before planting.")
+                lines.append(f"• {label} sebesar {val:.1f}{unit_str} — di atas optimal; perlu tindakan perbaikan sebelum tanam.")
         drivers_added += 1
         if drivers_added >= 3:
             break
 
-    # ── SECTION 3: ACTION PLAN ───────────────────────────────────────────────
-    lines.append("\n**ACTION PLAN:**")
+    # ── SECTION 3: RENCANA TINDAKAN ──────────────────────────────────────────
+    lines.append("\nRencana Tindakan:")
     actions_added = 0
     for feat, shap_val in sorted_features:
         val = input_data[feat]
@@ -231,10 +231,10 @@ def build_explanation(crop: str, shap_dict: dict, input_data: dict) -> str:
             break
 
     if actions_added == 0:
-        lines.append(f"• All key soil and climate parameters are within optimal range. Maintain current conditions and follow standard {name} cultivation practices.")
+        lines.append(f"• Semua parameter tanah dan iklim berada dalam rentang optimal. Pertahankan kondisi saat ini dan ikuti praktik budidaya {name} yang umum.")
 
-    # ── SECTION 4: RISK ASSESSMENT ───────────────────────────────────────────
-    lines.append("\n**RISK ASSESSMENT:**")
+    # ── SECTION 4: PENILAIAN RISIKO ──────────────────────────────────────────
+    lines.append("\nPenilaian Risiko:")
     risks = []
     for feat, shap_val in sorted_features:
         val = input_data[feat]
@@ -243,14 +243,14 @@ def build_explanation(crop: str, shap_dict: dict, input_data: dict) -> str:
             continue
         low, high, unit, _, _, risk_low, risk_high = ag
         if val < low:
-            risks.append(f"⚠ {FEATURE_LABELS[feat]} deficit — {risk_low}")
+            risks.append(f"⚠ Defisit {FEATURE_LABELS[feat]} — {risk_low}")
         elif val > high:
-            risks.append(f"⚠ {FEATURE_LABELS[feat]} excess — {risk_high}")
+            risks.append(f"⚠ Kelebihan {FEATURE_LABELS[feat]} — {risk_high}")
 
     if risks:
         lines.extend(risks[:3])
     else:
-        lines.append("✓ No major risk factors detected. Conditions are well-suited for {name} cultivation.".format(name=name))
+        lines.append(f"✓ Tidak ada faktor risiko signifikan. Kondisi lahan sangat sesuai untuk budidaya {name}.")
 
     return "\n".join(lines)
 
